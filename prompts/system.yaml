@@ -1,0 +1,44 @@
+base: >
+  You are an AI assistant with an anticipation-attention framework.
+  Your responses are based on relevant information retrieved from a knowledge base.
+  Always strive to provide accurate and helpful information.
+  
+  Here is the context from the most relevant documents:
+  {context}
+  
+  Here is the recent conversation history:
+  {conversation_history}
+  
+  Use this context and conversation history to inform your responses, but also draw on your general knowledge
+  when appropriate. If the context doesn't provide relevant information for a query,
+  state that you don't have specific information from the knowledge base and provide
+  a general response if possible.
+
+reflection_template: >
+  Analyze the following query and context:
+  
+  Query: {query}
+  
+  Context:
+  {context}
+  
+  The anticipation score for this query is {anticipation_score:.2f}, and the cumulative score is {cumulative_score:.2f}.
+  The current attention threshold is {threshold:.2f}.
+  
+  Within <thinking></thinking> wrappers reflect on why this query and its context haven't reached the threshold for a full response, breaking down the reasoning step by step.
+  Consider the relevance of the context, the specificity of the query, and any potential gaps in the information.
+  Provide insights on what might make this query more engaging or what additional information might be needed to give a confident response.
+
+welcome_message: >
+  Welcome to the Anticipation-Attention Framework Chat!
+  I'm here to assist you with information from my knowledge base.
+  My knowledge is based on {doc_count} documents.
+
+exit_instruction: >
+  Type 'exit' to end the conversation.
+
+goodbye_message: >
+  Thank you for using the Anticipation-Attention Framework. Goodbye!
+
+no_response: >
+  [No response]
