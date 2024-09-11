@@ -4,8 +4,6 @@
 
 As we attempt to create more sophisticated and human-like artificial intelligence systems, two key cognitive processes come to the forefront: attention and anticipation. These processes are fundamental to human cognition and play crucial roles in how we perceive, process, and interact with the world around us. This document explores the theoretical underpinnings and philosophical considerations of implementing attention and anticipation mechanisms in Language Models (LLMs), followed by a description of a toy framework as an initial step towards realizing these concepts.
 
-![image](https://github.com/user-attachments/assets/d2c346c5-9ca3-4272-9ab7-14e3f7cbeed5)
-
 ## Theoretical Framework
 
 ### Attention in Cognitive Science and AI
@@ -43,6 +41,8 @@ Implementing attention and anticipation in AI raises several philosophical quest
 ## Our Toy Framework: A First Step
 
 As an initial exploration of these concepts, we have developed a toy framework that implements simplified versions of attention and anticipation mechanisms for LLMs. Here's an overview of our approach:
+
+![image](https://github.com/user-attachments/assets/0892ae31-483c-4320-8d0d-09b83bb7fbd6)
 
 ### Attention Mechanism
 
