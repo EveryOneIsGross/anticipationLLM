@@ -10,6 +10,7 @@ import json
 from collections import deque
 import colorama
 from colorama import Fore, Back, Style
+import math
 
 colorama.init(autoreset=True)
 
@@ -55,6 +56,8 @@ class ImprovedDocumentIndexer:
     def search(self, query: str, top_k: int = 5) -> List[Tuple[Document, float]]:
         query_vector = self.vectorizer.transform([query])
         similarities = cosine_similarity(query_vector, self.document_vectors)[0]
+        # Ensure similarities are between 0 and 1
+        similarities = (similarities + 1) / 2
         top_indices = np.argsort(similarities)[::-1][:top_k]
         
         results = []
@@ -65,20 +68,24 @@ class ImprovedDocumentIndexer:
         
         return results
 
-    def get_context(self, query: str, max_tokens: int = 4096) -> str:
-        results = self.search(query)
+    def get_context(self, query: str, top_k: int = 3, max_tokens: int = 4096) -> str:
+        results = self.search(query, top_k=top_k)
         context = ""
         total_tokens = 0
         
-        for doc, score in results:
+        for i, (doc, score) in enumerate(results, 1):
             doc_tokens = self.encoding.encode(doc.content)
             if total_tokens + len(doc_tokens) <= max_tokens:
-                context += f"{Fore.CYAN}[From: {doc.path}]{Fore.RESET}\n{doc.content}\n\n"
+                context += f"## Document {i}: {doc.path}\n\n"
+                context += f"Relevance Score: {score:.4f}\n\n"
+                context += f"{doc.content}\n\n---\n\n"
                 total_tokens += len(doc_tokens)
             else:
                 remaining_tokens = max_tokens - total_tokens
                 partial_content = self.encoding.decode(doc_tokens[:remaining_tokens])
-                context += f"{Fore.CYAN}[From: {doc.path}]{Fore.RESET}\n{partial_content}\n\n"
+                context += f"## Document {i}: {doc.path} (Truncated)\n\n"
+                context += f"Relevance Score: {score:.4f}\n\n"
+                context += f"{partial_content}\n\n---\n\n"
                 break
         
         return context.strip()
@@ -86,15 +93,14 @@ class ImprovedDocumentIndexer:
     def get_topic_list(self) -> List[str]:
         return list(set(os.path.dirname(doc.path) for doc in self.documents))
 
-    def calculate_relevance_score(self, query: str) -> float:
-        results = self.search(query, top_k=1)
+    def calculate_relevance_score(self, query: str, top_k: int = 3) -> float:
+        results = self.search(query, top_k=top_k)
         if results:
-            score = results[0][1]
-            # Debug output
-            print(f"{Fore.YELLOW}Debug: Raw relevance score: {score}")
-            # Adjust the score to a more reasonable range
-            adjusted_score = (score + 1) / 2  # This maps [-1, 1] to [0, 1]
-            return adjusted_score
+            scores = [result[1] for result in results]
+            avg_score = sum(scores) / len(scores)
+            print(f"{Fore.YELLOW}Debug: Raw relevance scores: {scores}")
+            print(f"{Fore.YELLOW}Debug: Average relevance score: {avg_score:.4f}")
+            return avg_score  # This is already between 0 and 1
         return 0.0
 
 class AnticipationAttentionFramework:
@@ -113,6 +119,7 @@ class AnticipationAttentionFramework:
         self.conversation_file = 'conversation_history.jsonl'
         self.load_conversation_history()
         self.cumulative_anticipation = 0.0
+        self.top_k = 3  # Number of top documents to consider
 
     def _load_prompts(self) -> Dict[str, Dict[str, str]]:
         prompts = {}
@@ -128,7 +135,7 @@ class AnticipationAttentionFramework:
         self.indexer.ingest_documents(docs_path)
 
     def _prepare_context(self, query: str) -> str:
-        return self.indexer.get_context(query, self.max_context_tokens)
+        return self.indexer.get_context(query, top_k=self.top_k, max_tokens=self.max_context_tokens)
 
     def _get_topic_list(self) -> str:
         return "\n".join(self.indexer.get_topic_list())
@@ -136,17 +143,26 @@ class AnticipationAttentionFramework:
     def calculate_anticipation(self, relevance_score: float) -> float:
         self.relevance_scores.append(relevance_score)
         
-        alpha = 0.3  # Smoothing factor
-        anticipation_increment = relevance_score
-        for i, score in enumerate(reversed(self.relevance_scores)):
-            anticipation_increment = alpha * score + (1 - alpha) * anticipation_increment
+        # Parameters for the exponential function
+        base = 2.0  # Steepness of the exponential curve
+        scale = 0.5  # Scaling factor for the relevance scores
         
-        self.cumulative_anticipation += anticipation_increment
+        # Calculate weighted sum of recent relevance scores
+        weighted_sum = sum(score * (base ** (i * scale)) 
+                        for i, score in enumerate(reversed(self.relevance_scores)))
+        
+        # Normalize the weighted sum
+        max_possible_sum = sum(base ** (i * scale) for i in range(len(self.relevance_scores)))
+        normalized_anticipation = weighted_sum / max_possible_sum
+        
+        # Apply a sigmoid function to create a smooth S-curve
+        self.cumulative_anticipation = 1 / (1 + math.exp(-10 * (normalized_anticipation - 0.5)))
+        
         return self.cumulative_anticipation
 
     def process_query(self, query: str) -> Tuple[str, float, float]:
         context = self._prepare_context(query)
-        relevance_score = self.indexer.calculate_relevance_score(query)
+        relevance_score = self.indexer.calculate_relevance_score(query, top_k=self.top_k)
         
         # Debug output
         print(f"{Fore.YELLOW}Debug: Adjusted relevance score: {relevance_score:.4f}")
@@ -185,9 +201,13 @@ class AnticipationAttentionFramework:
             print(f"{Style.NORMAL}{response}")
             
             response += f"\n\n{Fore.YELLOW}Confidence level: {anticipation:.2f}"
-            response += f"\n\n{Fore.CYAN}Source: {self.indexer.search(query, top_k=1)[0][0].path}"
+            response += f"\n\n{Fore.CYAN}Top {self.top_k} Sources:"
+            for i, (doc, score) in enumerate(self.indexer.search(query, top_k=self.top_k), 1):
+                response += f"\n{i}. {doc.path} (Score: {score:.4f})"
             
-            self.cumulative_anticipation = 0.0  # Reset after full response
+            # Reset anticipation after full response
+            self.cumulative_anticipation = 0.0
+            print(f"{Fore.YELLOW}Debug: Anticipation reset to 0.0 after full response")
         else:
             response = self.prompts['responses']['low_confidence'].format(
                 query=query,
