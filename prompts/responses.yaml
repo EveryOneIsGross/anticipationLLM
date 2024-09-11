@@ -1,0 +1,42 @@
+# responses.yaml
+
+no_relevant_docs: >
+  I'm sorry, but I couldn't find any relevant information about "{query}" in my knowledge base.
+  The topics I have information on include:
+  {topics}
+  Perhaps you could rephrase your question or ask about one of these topics?
+
+low_confidence: >
+  While I found some information related to "{query}", my confidence in providing a comprehensive answer is low.
+  The most relevant document I found was "{top_doc_path}", but its relevance score of {top_score:.2f} is below my confidence threshold of {threshold:.2f}.
+  Would you like me to share what limited information I have, or would you prefer to ask a different question?
+
+confidence_level: >
+  Based on the relevance of the information I found, my confidence in this response is {confidence_score:.2f} out of 1.00.
+
+source_citation: >
+  This information is primarily sourced from: {doc_path}
+
+general_response: >
+  While I don't have specific information from my knowledge base about "{query}",
+  I can provide a general response based on my training:
+  {general_info}
+
+clarification_request: >
+  I'm not quite sure I understand your question about "{query}". Could you please provide more context or rephrase your question?
+
+follow_up_suggestion: >
+  Based on your question about "{query}", you might also be interested in asking about:
+  {suggestions}
+
+error_response: >
+  I apologize, but I encountered an error while processing your query about "{query}".
+  This could be due to a technical issue or limitations in my current knowledge base.
+  Could you please try rephrasing your question or asking about a different topic?
+
+no_response: >
+  [No response]
+
+farewell: >
+  Thank you for your questions. I hope the information I provided was helpful. 
+  If you have any more queries in the future, feel free to ask. Have a great day!

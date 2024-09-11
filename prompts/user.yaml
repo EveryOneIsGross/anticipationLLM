@@ -1,0 +1,8 @@
+query_template: >
+  Please provide information about the following query: {query}
+  Use the context provided to formulate your response, and if you're unsure or the information isn't available,
+  please say so rather than speculating. If you use information from the context, mention the source file.
+
+follow_up_template: >
+  Regarding your previous question about "{previous_query}", you asked: {query}
+  Please provide a response, keeping in mind the context of the previous question and any new relevant information.
